@@ -1,6 +1,7 @@
 package mailer
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 	"regexp"
@@ -24,6 +25,7 @@ func getEnvBool(key string) bool{
 }
 
 var withoutFragment = getEnvBool("GOTRUE_WITHOUT_FRAGMENT")
+var addURLType = getEnvBool("GOTRUE_ADD_URL_TYPE")
 
 // Mailer defines the interface a mailer must implement.
 type Mailer interface {
@@ -62,7 +64,7 @@ func withDefault(value, defaultValue string) string {
 	return value
 }
 
-func getSiteURL(referrerURL, siteURL, filepath, fragment string) (string, error) {
+func getSiteURL(referrerURL, siteURL, filepath, fragment string, uType string) (string, error) {
 	baseURL := siteURL
 	if filepath == "" && referrerURL != "" {
 		baseURL = referrerURL
@@ -83,7 +85,11 @@ func getSiteURL(referrerURL, siteURL, filepath, fragment string) (string, error)
 	site.Fragment = fragment
 	out := site.String()
 	if withoutFragment {
-		out = strings.ReplaceAll(out, "#", "?")
+		if !addURLType {
+			out = strings.ReplaceAll(out, "#", "?")
+		} else {
+			out = strings.ReplaceAll(out, "#", fmt.Sprintf("%s/?", uType))
+		}
 	}
 
 	return out, nil
