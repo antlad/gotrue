@@ -2,11 +2,28 @@ package mailer
 
 import (
 	"net/url"
+	"os"
 	"regexp"
+	"strings"
 
 	"github.com/netlify/gotrue/conf"
 	"github.com/netlify/gotrue/models"
 )
+
+func getEnvBool(key string) bool{
+	v := os.Getenv(key)
+	if len(v) == 0 {
+		return false
+	}
+
+	if strings.ToLower(v) != "true" {
+		return false
+	}
+
+	return true
+}
+
+var withoutFragment = getEnvBool("GOTRUE_WITHOUT_FRAGMENT")
 
 // Mailer defines the interface a mailer must implement.
 type Mailer interface {
@@ -62,8 +79,14 @@ func getSiteURL(referrerURL, siteURL, filepath, fragment string) (string, error)
 		}
 		site = site.ResolveReference(path)
 	}
+
 	site.Fragment = fragment
-	return site.String(), nil
+	out := site.String()
+	if withoutFragment {
+		out = strings.ReplaceAll(out, "#", "?")
+	}
+
+	return out, nil
 }
 
 var urlRegexp = regexp.MustCompile(`^https?://[^/]+`)
